@@ -162,18 +162,18 @@ const sendChatMessage = async (msg) => {
   setChatMessages(m => [...m, { role: "user", text: msg }]);
   setChatInput("");
   setChatBusy(true);
-  const workflowCtx = results ? `\nCurrent Analysis:\n- Workflow: ${form.workflowName}\n- App: ${form.applicationName}\n- Overall Score: ${results.overallReadinessScore}/100\n- Key Insights: ${results.keyInsights.join(", ")}` : "\nNo analysis performed yet.";
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 800,
-        system: `You are a helpful AI change management consultant for application training workflows. Help users understand and improve their workflow automation readiness. Keep responses concise and actionable.${workflowCtx}`,
-        messages: [...chatMessages.map(m => ({ role: m.role, content: m.text })), { role: "user", content: msg }]
-      })
-    });
+        const workflowCtx = results ? `\nCurrent Analysis:\n- Workflow: ${form.workflowName}\n- App: ${form.applicationName}\n- Overall Score: ${results.overallReadinessScore}/100\n- Key Insights: ${results.keyInsights.join(", ")}` : "\nNo analysis performed yet.";
+        try {
+          const res = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 800,
+              system: `You are a helpful AI change management consultant for application training workflows. Help users understand and improve their workflow automation readiness. Keep responses concise and actionable.${workflowCtx}`,
+              messages: [...chatMessages.map(m => ({ role: m.role, content: m.text })), { role: "user", content: msg }]
+            })
+          });
     const d = await res.json();
     const reply = d.content[0].text;
     setChatMessages(m => [...m, { role: "assistant", text: reply }]);
@@ -223,11 +223,11 @@ Return exactly this JSON schema:
   "roadmap": [{"phase":<1-3>,"title":"<title>","timeframe":"<e.g. Week 1-2>","items":["<action>","<action>","<action>"],"priority":"<critical|high|medium>"}]
 }`;
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
-      });
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
+        });
       const d = await res.json();
       const txt = d.content[0].text.replace(/```json|```/g, "").trim();
       setResults(JSON.parse(txt));
