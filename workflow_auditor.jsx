@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 
 import { useState, useRef } from "react";
 
@@ -152,6 +153,49 @@ export default function App() {
   const [tab, setTab] = useState("automation");
   const resultsRef = useRef(null);
 
+const [chatOpen, setChatOpen] = useState(false);
+const [chatMessages, setChatMessages] = useState([]);
+const [chatInput, setChatInput] = useState("");
+const [chatBusy, setChatBusy] = useState(false);
+const chatMessagesRef = useRef(null);
+
+const sendChatMessage = async (msg) => {
+  if (!msg.trim()) return;
+  setChatMessages(m => [...m, { role: "user", text: msg }]);
+  setChatInput("");
+  setChatBusy(true);
+  const workflowCtx = results ? `\nCurrent Analysis:\n- Workflow: ${form.workflowName}\n- App: ${form.applicationName}\n- Overall Score: ${results.overallReadinessScore}/100\n- Key Insights: ${results.keyInsights.join(", ")}` : "\nNo analysis performed yet.";
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 800,
+        system: `You are a helpful AI change management consultant for application training workflows. Help users understand and improve their workflow automation readiness. Keep responses concise and actionable.${workflowCtx}`,
+        messages: [...chatMessages.map(m => ({ role: m.role, content: m.text })), { role: "user", content: msg }]
+      })
+    });
+    const d = await res.json();
+    const reply = d.content[0].text;
+    setChatMessages(m => [...m, { role: "assistant", text: reply }]);
+  } catch (e) {
+    setChatMessages(m => [...m, { role: "assistant", text: "Sorry, something went wrong. Please try again." }]);
+  }
+  setChatBusy(false);
+};
+
+useEffect(() => {
+  if (chatMessagesRef.current) {
+    chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+  }
+}, [chatMessages]);
+
+useEffect(() => {
+  if (chatOpen && chatMessages.length === 0) {
+    setChatMessages([{ role: "assistant", text: "Hi! I'm your AI workflow assistant. Ask me anything about your analysis, workflow automation, or change management best practices." }]);
+  }
+}, [chatOpen]);
   const uf = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const us = (id, k, v) => setForm(f => ({ ...f, stages: f.stages.map(s => s.id === id ? { ...s, [k]: v } : s) }));
   const addStage = () => { const mx = Math.max(...form.stages.map(s => s.id), 0); setForm(f => ({ ...f, stages: [...f.stages, { id: mx + 1, name: "", desc: "" }] })); };
@@ -221,6 +265,91 @@ Return exactly this JSON schema:
       `}</style>
 
       <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'DM Sans',sans-serif" }}>
+
+        {/* Chat Widget */}
+        <div style={{ position: "fixed", bottom: 20, right: 20, display: "flex", flexDirection: "column", gap: 10, zIndex: 1000 }}>
+          {chatOpen && (
+            <div style={{ width: 360, height: 540, background: C.card, border: `1px solid ${C.border}`, borderRadius: 12, display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+              <div style={{ padding: "14px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 700, color: C.text }}>Workflow Assistant</div>
+                <button onClick={() => setChatOpen(false)} style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 18 }}>×</button>
+              </div>
+              <div ref={chatMessagesRef} style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                {chatMessages.map((m, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                    <div style={{
+                      maxWidth: "80%",
+                      padding: "10px 12px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      lineHeight: 1.4,
+                      background: m.role === "user" ? "rgba(0,212,255,0.15)" : "rgba(255,255,255,0.05)",
+                      color: C.text,
+                      border: `1px solid ${m.role === "user" ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.08)"}`
+                    }}>
+                      {m.text}
+                    </div>
+                  </div>
+                ))}
+                {chatBusy && (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: C.cyan, animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: 12, borderTop: `1px solid ${C.border}`, display: "flex", gap: 8 }}>
+                <input
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyPress={e => e.key === "Enter" && !chatBusy && sendChatMessage(chatInput)}
+                  placeholder="Ask a question..."
+                  disabled={chatBusy}
+                  style={{ fontSize: 12, padding: "8px 10px" }}
+                />
+                <button
+                  onClick={() => sendChatMessage(chatInput)}
+                  disabled={chatBusy || !chatInput.trim()}
+                  style={{
+                    background: chatBusy || !chatInput.trim() ? "rgba(0,212,255,0.3)" : C.cyan,
+                    color: "#07090f",
+                    border: "none",
+                    borderRadius: 4,
+                    width: 32,
+                    height: 32,
+                    cursor: chatBusy || !chatInput.trim() ? "not-allowed" : "pointer",
+                    fontSize: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 700
+                  }}
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              background: chatOpen ? "rgba(0,212,255,0.2)" : C.cyan,
+              border: chatOpen ? `2px solid ${C.cyan}` : "none",
+              color: chatOpen ? C.cyan : "#07090f",
+              cursor: "pointer",
+              fontSize: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              transition: "all 0.2s"
+            }}
+          >
+            {chatOpen ? "−" : "💬"}
+          </button>
+        </div>
 
         {/* Header */}
         <div style={{ padding: "28px 36px 20px", borderBottom: "1px solid rgba(0,212,255,0.1)", background: "linear-gradient(180deg,rgba(0,212,255,0.04) 0%,transparent 100%)" }}>
