@@ -1,23 +1,7 @@
 # ChangeAssessment
 
-AI Workflow Readiness Auditor with server-side API proxy.
+AI Workflow Readiness Auditor (frontend demo).
 
-## Setup
+This demo uses the client-side `workflow_auditor.jsx` which calls Anthropic directly. For today's demo note that no valid Anthropic credits were available; you can insert an API key in the client if you wish to test further.
 
-1. **Create `.env` file** in the project root:
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Add your Anthropic API key** to `.env`:
-   ```
-   ANTHROPIC_API_KEY=sk-ant-your_actual_key_here
-   ```
-
-3. **Install dependencies and start the server**:
-   ```bash
-   npm install
-   npm start
-   ```
-
-The server will listen on `http://localhost:3001` and proxy `/api/chat` and `/api/analyze` requests to the Anthropic API using your key from the `.env` file.
+To run the frontend locally, serve your React app as usual (e.g., Vite/CRA/Next). The analyze button will attempt to call the Anthropic API directly from the browser.

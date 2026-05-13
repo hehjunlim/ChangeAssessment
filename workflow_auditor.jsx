@@ -164,7 +164,7 @@ const sendChatMessage = async (msg) => {
   setChatBusy(true);
         const workflowCtx = results ? `\nCurrent Analysis:\n- Workflow: ${form.workflowName}\n- App: ${form.applicationName}\n- Overall Score: ${results.overallReadinessScore}/100\n- Key Insights: ${results.keyInsights.join(", ")}` : "\nNo analysis performed yet.";
         try {
-          const res = await fetch("/api/chat", {
+          const res = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -223,7 +223,7 @@ Return exactly this JSON schema:
   "roadmap": [{"phase":<1-3>,"title":"<title>","timeframe":"<e.g. Week 1-2>","items":["<action>","<action>","<action>"],"priority":"<critical|high|medium>"}]
 }`;
     try {
-        const res = await fetch("/api/analyze", {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1500, messages: [{ role: "user", content: prompt }] })
