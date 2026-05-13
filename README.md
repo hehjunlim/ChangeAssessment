@@ -1,13 +1,23 @@
 # ChangeAssessment
 
-Server proxy for Anthropic API
+AI Workflow Readiness Auditor with server-side API proxy.
 
- - Create a `.env` file or set `ANTHROPIC_API_KEY` in your environment.
- - Install dependencies and start the proxy server:
+## Setup
 
-```bash
-npm install
-npm start
-```
+1. **Create `.env` file** in the project root:
+   ```bash
+   cp .env.example .env
+   ```
 
-The frontend will call `/api/chat` and `/api/analyze` on the same origin. In development, run the proxy and serve the frontend from the same host or configure your dev server to proxy `/api` to the server port.
+2. **Add your Anthropic API key** to `.env`:
+   ```
+   ANTHROPIC_API_KEY=sk-ant-your_actual_key_here
+   ```
+
+3. **Install dependencies and start the server**:
+   ```bash
+   npm install
+   npm start
+   ```
+
+The server will listen on `http://localhost:3001` and proxy `/api/chat` and `/api/analyze` requests to the Anthropic API using your key from the `.env` file.
